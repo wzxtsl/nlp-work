@@ -159,7 +159,7 @@ def main():
             original_text = item.get("text", "").strip()
             # 我们需要给Prompt模板的文本留出一些空间，所以截断长度要比max_model_len小
             # 假设Prompt模板本身大约占200个token
-            max_model_len=8192
+            max_model_len=12000
             max_text_len = max_model_len - 200 
             if len(original_text) > max_text_len:
                 original_text = original_text[:max_text_len]

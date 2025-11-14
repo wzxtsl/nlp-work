@@ -134,3 +134,5 @@ model = LLM(
 提升方法:
 放宽质检标准: 在 qa/qa_config.py 中，适度降低 SEMANTIC_SIMILARITY_MIN，或放宽 MIN/MAX_*_LEN 的范围。
 增加生成次数: 修改 qa/qa_generate.py 的主循环，让每个源文本尝试生成多次QA对。这是最直接的“倍增器”，但会增加处理时间。
+
+☺☺☺其他部分自行理解☺☺☺

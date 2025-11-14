@@ -55,7 +55,7 @@ def load_rewrite_model():
             model=REWRITE_MODEL_ID, 
             trust_remote_code=True,
             gpu_memory_utilization=0.7, # 保持对显存使用的限制
-            max_model_len=8192          # 保持对最大长度的限制
+            max_model_len=12000          # 保持对最大长度的限制
         )
         tokenizer = model.get_tokenizer()
         print(f"✅ 改写模型 (vLLM) 加载完成")

@@ -35,9 +35,9 @@ MAX_SOURCE_CHARS = 1600  # 过长文本先做截断，避免提示词过长
 
 # ========== 过滤与质量控制 ==========
 MIN_QUESTION_LEN = 8
-MAX_QUESTION_LEN = 180
+MAX_QUESTION_LEN = 300
 MIN_ANSWER_LEN = 4
-MAX_ANSWER_LEN = 800
+MAX_ANSWER_LEN = 1200
 REQUIRED_CHINESE_PUNCT = "？"  # 优先生成以问号结尾的中文问题
 SEMANTIC_SIMILARITY_MIN = 0.55  # 问题与原文语义相关度（粗略阈值，复用 embedding）
 

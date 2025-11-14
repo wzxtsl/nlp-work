@@ -80,16 +80,16 @@ python run_pipeline.py
 脚本将依次执行数据筛选 -> 数据改写 -> QA生成。最终的高质量QA数据集将保存在 data/qa_output/qa_pairs.jsonl。
 
 ## 各模块详解
-#阶段一：数据筛选 (filter.py)
-目标：从海量原始数据中，通过一系列严格的规则和AI评估，筛选出干净、无害、高质量的文本。
-核心模型：uer/gpt2-chinese-cluecorpussmall (用于计算困惑度)。
-工作流程：
-基础过滤：长度、敏感词、口语化内容。
-双重去重：MD5（精确）+ Minhash LSH（语义）。
-AI质检：基于困惑度百分位，保留流畅的现代文和“地道”的古文。
-产出：data/output/clmmu_kept_data_final.jsonl，一个附加了困惑度等元数据的高质量文本集。
+# 阶段一：数据筛选 (filter.py)
+-   ***目标***：从海量原始数据中，通过一系列严格的规则和AI评估，筛选出干净、无害、高质量的文本。
+-   ***核心模型***：uer/gpt2-chinese-cluecorpussmall (用于计算困惑度)。
+-   ***工作流程：***
+    -   1. 基础过滤：长度、敏感词、口语化内容。
+    -   2. 双重去重：MD5（精确）+ Minhash LSH（语义）。
+    -   3. AI质检：基于困惑度百分位，保留流畅的现代文和“地道”的古文。
+-   ***产出***：data/output/clmmu_kept_data_final.jsonl，一个附加了困惑度等元数据的高质量文本集。
 
-#阶段二：数据改写 (rewrite.py)
+# 阶段二：数据改写 (rewrite.py)
 目标：对筛选后的文本进行“精加工”，修复表达缺陷并注入逻辑价值。
 核心模型：Qwen/Qwen1.5-1.8B-Chat (通过 vLLM 加载)。
 工作流程：
@@ -98,7 +98,7 @@ AI质检：基于困惑度百分位，保留流畅的现代文和“地道”的
 严格质检：确保改写后的文本忠于原意且真正达到了优化/增强的目标。
 产出：data/rewrite_output/rewritten_data.jsonl，记录了所有文本的改写状态和结果。
 
-阶段三：QA生成 (qa_generate.py)
+# 阶段三：QA生成 (qa_generate.py)
 目标：将精炼后的陈述性文本，创造性地转化为结构化的问答对，用于指令微调。
 核心模型：Qwen/Qwen1.5-1.8B-Chat (通过 vLLM 加载)。
 工作流程：
@@ -109,10 +109,11 @@ AI质检：基于困惑度百分位，保留流畅的现代文和“地道”的
 产出：data/qa_output/qa_pairs.jsonl，最终可用于微调的高质量指令数据集。
 
 ## 常见问题 (FAQ)
-1.运行报错 Repo id must be in the form ...
+1. 运行报错 Repo id must be in the form ...
 问题: 你在配置文件中（如 rewrite_config.py 或 qa_config.py）将模型ID错误地设置为了一个本地路径。
 解决: 请确保所有 MODEL_ID 相关的变量都设置为Hugging Face Hub上的标准模型ID，例如 "Qwen/Qwen1.5-1.8B-Chat"，而不是本地缓存路径。
-2.vLLM 报错显存不足 (ValueError: ... KV cache is needed ...)
+
+2. vLLM 报错显存不足 (ValueError: ... KV cache is needed ...)
 问题: GPU上同时加载了多个模型，导致vLLM启动时没有足够的连续显存。
 解决: 在 vLLM 加载模型的代码中（如 rewrite/model_utils.py -> load_rewrite_model），为 LLM() 添加参数 gpu_memory_utilization 和 max_model_len 来限制其资源占用。
 
@@ -124,10 +125,11 @@ model = LLM(
     max_model_len=8192          # 限制最大序列长度
 )
 ```
-3.如何处理更大的数据集（>10G）？
+3. 如何处理更大的数据集（>10G）？
 当前 filter.py 脚本采用了将中间数据缓存在内存中的策略。对于超大规模数据集，这可能会导致内存溢出。
 优化建议: 修改 filter.py，将 preprocess_and_md5_deduplicate 和 minhash_lsh_deduplicate 的结果分块写入临时文件，然后在 layered_perplexity_filter 中逐块读取处理，以将内存占用降低为流式处理。
-4.如何提升最终QA数据集的产出量？
+
+4. 如何提升最终QA数据集的产出量？
 最终产出量主要由 QA生成阶段的成功率 决定。
 提升方法:
 放宽质检标准: 在 qa/qa_config.py 中，适度降低 SEMANTIC_SIMILARITY_MIN，或放宽 MIN/MAX_*_LEN 的范围。

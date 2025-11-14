@@ -39,7 +39,7 @@ MAX_SEQ_LENGTH = 512
 
 # 去重配置（适度收紧，弥补删除的筛选环节）
 MINHASH_NUM_PERM = 128
-LSH_THRESHOLD = 0.76  # 从0.75→0.76，减少冗余
+LSH_THRESHOLD = 0.50  # 减少冗余
 
 # 模型配置
 MODEL_ID = "uer/gpt2-chinese-cluecorpussmall"
@@ -536,7 +536,7 @@ def analyze_perplexity_distribution_layered(deduplicated_data, sample_size=1000)
     classic_percentiles = np.percentile(classic_valid, percentiles)
     
     # 核心阈值配置（确保保留率50%）
-    modern_threshold_idx = 6  # 75%分位数（过滤高困惑度现代文）
+    modern_threshold_idx = 7  # 75%分位数（过滤高困惑度现代文）
     classic_threshold_idx = 1  # 10%分位数（保留高困惑度古文）
     
     modern_threshold = modern_percentiles[modern_threshold_idx]

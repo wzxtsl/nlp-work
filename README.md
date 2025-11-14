@@ -1,138 +1,205 @@
-# 文本改写改写工具使用说明
+# 高质量中文指令数据集精炼管道
 
+本项目是一个端到端的数据处理流水线，旨在将海量的、原始的中文网络文本，通过多阶段的**筛选、改写与增强、以及指令生成**，转化为可直接用于大型语言模型（LLM）**指令微调（Instruction Fine-Tuning）**的高质量数据集。
 
-## 工具简介
-本工具用于对文本数据进行自动改写优化，主要针对高困惑度文本（提升流畅度）和冗余文本（精简表达），同时确保改写前后语义一致。支持批量处理，可直接对接上游筛选后的数据集，输出包含完整改写结果的结构化数据。
+整个管道经过深度优化，集成了 **vLLM** 高性能推理引擎，能够在消费级硬件（如NVIDIA 4090）上高效处理TB级数据。
 
+## 核心特性
 
-## 环境依赖
-- Python 3.8+
-- 必要依赖库：
-  ```bash
-  pip install torch transformers tqdm numpy
-  ```
-- 建议配置：
-  - 显存：≥14GB（支持批量处理）
-  - 磁盘空间：≥10GB（全量数据处理）
+-   **多层级数据筛选**：集成长度、敏感词、口语化、精确去重（MD5）和语义去重（Minhash LSH）等多道过滤关卡。
+-   **AI驱动的质量评估**：使用轻量级模型（`uer/gpt2-chinese-cluecorpussmall`）计算困惑度，智能筛选高质量文本。
+-   **双模文本改写与增强**：
+    -   **修复模式**：针对高困惑度（不通顺）和高冗余度（啰嗦）的文本进行优化。
+    -   **增强模式**：为缺乏上下文的简短陈述句，智能地**注入因果逻辑链**，直接创造推理训练样本。
+-   **多样化QA指令生成**：
+    -   根据文本内容智能判断提问角度（定义、原因、比较等）。
+    -   采用**随机化Prompt模板**策略，生成多样化、不刻板的问答对。
+-   **高性能实现**：所有生成任务（改写、QA生成）均采用 **vLLM** 引擎，通过**持续批处理 (Continuous Batching)** 实现数十倍的性能提升。
+-   **完全自动化**：通过 `run_pipeline.py` 一键启动，完成从原始数据到最终QA数据集的全流程处理。
 
+## 项目结构
 
-## 目录结构
-```
-nlp-work/
-├── rewrite/
-│   ├── rewrite.py          # 主程序（核心改写逻辑）
-│   ├── rewrite_config.py   # 配置参数（模型、阈值等）
-│   ├── model_utils.py      # 模型加载/生成工具函数
-│   └── prompt_templates.py # 改写提示词模板
-├── filter.py               # 数据筛选
-├── run_pipeline.py         # 管道
-└── README.md               # 本说明文件
-```
+```nlp-work/
+├── data/
+│   ├── input/                # -> 1. 存放原始数据 (需手动创建)
+│   ├── output/               # <- 2. 筛选后的高质量文本
+│   ├── rewrite_output/       # <- 3. 改写与增强后的文本
+│   └── qa_output/            # <- 4. 最终生成的QA指令数据集
+├── config.py                 # 全局共享配置文件
+├── filter.py                 # 阶段一：数据筛选脚本
+├── rewrite/                  # 阶段二：数据改写与增强模块
+│   ├── rewrite.py
+│   ├── rewrite_config.py
+│   ├── model_utils.py
+│   └── prompt_templates.py
+├── qa/                       # 阶段三：QA指令生成模块
+│   ├── qa_generate.py
+│   ├── qa_config.py
+│   └── prompt_templates.py
+├── run_pipeline.py           # 自动化流水线总控制器
+├── finetune_qwen.py          # (示例)下游微调脚本
+└── README.md                 # 本说明文件
+环境依赖
 
+Python 3.10+
 
-## 快速开始
-1. **准备输入数据**：  
-   将上游筛选后的JSONL格式数据放入 `data/input/` 目录，确保每条数据包含：
-   - `id`：唯一标识
-   - `text`：原始文本
-   - `perplexity`：困惑度（用于筛选高困惑度文本）
-   - `text_type`：文本类型（`modern_chinese` 或 `classic_chinese`）
+PyTorch 2.1+
 
-2. **运行测试模式**：  
-   ```bash
-   python run_pipeline.py 
-   ```
+NVIDIA GPU (推荐 Ampere 架构及以上, 如 30/40 系列)
 
-3. **查看结果**：  
-   输出文件位于 `data/rewrite_output/rewritten_data.jsonl`，包含所有数据的改写状态（未改写/成功/失败）及详细指标。
+CUDA 12.1+
 
+核心依赖库安装：
 
-## 核心功能配置
-### 1. 切换模型
-如需更换改写模型或困惑度计算模型，修改 `rewrite_config.py` 中的模型ID：
-```python
-# rewrite_config.py
-MODEL_ID = "Qwen/Qwen1.5-1.8B-Chat"  # 同时用于改写和困惑度计算
-REWRITE_MODEL_ID = MODEL_ID          # 改写模型（可单独指定）
-```
-- 支持Hugging Face Hub上的所有因果语言模型（如 `baichuan-7b`、`chatglm3-6b` 等）
-- 模型切换后需确保 `model_utils.py` 中的加载逻辑兼容（主要适配 `generate_rewrite` 函数）
+code
+Bash
+download
+content_copy
+expand_less
+pip install torch transformers datasets tqdm numpy datasketch psutil
+# 强烈推荐安装 vLLM 以获得数十倍的性能提升
+pip install vllm
+快速开始
+1. 准备原始数据
 
+将你的原始 .jsonl 格式数据（每行一个JSON，至少包含 text 字段）放入 data/input/ 目录下。
 
-### 2. 调整批量大小（Batch Size）
-根据显存大小修改批量处理规模，在 `rewrite.py` 主流程中调整：
-```python
-# rewrite.py 中 main 函数内
-adjusted_batch_size = 6  # 14GB显存推荐值
-# 若显存≥20GB，可尝试增大至 8-10；若显存不足，降低至 2-4
-```
+code
+Bash
+download
+content_copy
+expand_less
+# 在项目根目录创建所需文件夹
+mkdir -p data/input
+# 将你的数据文件移动到该目录
+mv /path/to/your/data.jsonl data/input/
+2. (重要) 配置镜像与环境变量
 
+为了避免模型下载缓慢或失败，强烈建议在运行前设置Hugging Face镜像。
 
-### 3. 改写阈值配置
-所有阈值参数在 `rewrite_config.py` 中定义，可根据需求调整：
-```python
-# rewrite_config.py
-MODERN_PERPLEXITY_PERCENTILE = 80  # 高困惑度阈值（取现代文困惑度的80%分位数）
-SEMANTIC_SIMILARITY_THRESHOLD = 0.8  # 语义相似度最低阈值（低于此值视为失败）
-PERPLEXITY_REDUCTION_RATIO = 0.9  # 困惑度降低比例（需降至原90%以下）
-REDUNDANCY_RATIO_THRESHOLD = 0.2  # 冗余度阈值（高于此值视为冗余文本）
-SKIP_CLASSIC_CHINESE = True  # 是否跳过古文（True/False）
-```
+在你的终端中执行（该设置仅对当前终端有效）：
 
+code
+Bash
+download
+content_copy
+expand_less
+export HF_ENDPOINT=https://hf-mirror.com
+3. 配置参数（可选）
 
-### 4. 切换全量/测试模式
-- **测试模式**（默认）：仅处理前10000条数据，适合快速验证效果  
-  无需修改代码，直接运行即可。
+你可以根据需求，调整每个阶段的配置文件，以控制数据处理的策略和产出量：
 
-- **全量模式**：处理所有数据，适合正式运行  
-  打开 `rewrite.py`，取消注释"完整模式"代码块，并注释"测试模式"代码块：
-  ```python
-  # 注释测试模式代码
-  # print(f"开始改写测试（前10000条数据）...")
-  # ...（测试模式处理逻辑）
+筛选宽松度: filter.py (如 LSH_THRESHOLD)
 
-  # 取消注释全量模式代码
-  print(f"开始全量数据改写...")
-  # ...（全量模式处理逻辑）
-  ```
+改写策略: rewrite/rewrite_config.py (如 LOGIC_INJECTION_SAMPLING_RATE)
 
+QA生成策略: qa/qa_config.py (如 BATCH_SIZE_QA, SEMANTIC_SIMILARITY_MIN)
 
-## 输出结果说明
-输出文件为JSONL格式（每行一条JSON），包含以下核心字段：
-| 字段名               | 说明                                  |
-|----------------------|---------------------------------------|
-| `id`                 | 原始文本唯一标识                      |
-| `original_text`      | 原始文本内容                          |
-| `rewritten_text`     | 改写后的文本（未改写则为None）        |
-| `status`             | 处理状态（`skipped`/`success`/`failed`/`error`） |
-| `reason`             | 状态说明（如"古文无需改写"、"困惑度未降低"等） |
-| `orig_perplexity`    | 原始文本困惑度（仅高困惑度文本有值）  |
-| `rew_perplexity`     | 改写后文本困惑度（仅成功案例有值）    |
+4. 一键启动流水线
+code
+Bash
+download
+content_copy
+expand_less
+python run_pipeline.py
 
+脚本将依次执行数据筛选 -> 数据改写 -> QA生成。最终的高质量QA数据集将保存在 data/qa_output/qa_pairs.jsonl。
 
-## 常见问题解决
-1. **显存不足（OOM）**：  
-   - 降低 `adjusted_batch_size` 至4或2  
-   - 启用4bit量化（在 `model_utils.py` 的 `load_rewrite_model` 中添加 `load_in_4bit=True`）
+各模块详解
+阶段一：数据筛选 (filter.py)
 
-2. **磁盘空间不足**：  
-   - 清理输出目录历史文件  
-   - 启用空间优化模式（使用精简输出字段的代码版本）
+目标：从海量原始数据中，通过一系列严格的规则和AI评估，筛选出干净、无害、高质量的文本。
 
-3. **模型加载失败**：  
-   - 检查网络连接（首次运行需下载模型）  
-   - 确认模型ID正确，且支持因果语言模型（CausalLM）格式  
-   - 添加 `trust_remote_code=True` 加载自定义模型
+核心模型：uer/gpt2-chinese-cluecorpussmall (用于计算困惑度)。
 
-4. **改写效果不佳**：  
-   - 调整 `prompt_templates.py` 中的提示词模板，增强指令明确性  
-   - 降低 `PERPLEXITY_REDUCTION_RATIO` 阈值（如0.85），放宽困惑度要求  
+工作流程：
 
+基础过滤：长度、敏感词、口语化内容。
 
-## 使用提示
-1. **测试优先**：新配置或新模型下，建议先运行测试模式（10000条数据）验证效果，再执行全量处理。
-2. **日志查看**：运行过程中的警告和错误会记录在 `data/rewrite_output/rewrite_log.log`，可用于排查问题。
-3. **参数备份**：修改配置前建议备份 `rewrite_config.py`，避免参数混乱。
-4. **批量调整**：全量处理大规模数据时，可分时段运行（工具支持断点续跑需额外开发，当前建议一次性运行）。
+双重去重：MD5（精确）+ Minhash LSH（语义）。
 
-本文件后半部分为rewrite的说明，其余文件自行理解☺☺☺。
+AI质检：基于困惑度百分位，保留流畅的现代文和“地道”的古文。
+
+产出：data/output/clmmu_kept_data_final.jsonl，一个附加了困惑度等元数据的高质量文本集。
+
+阶段二：数据改写 (rewrite.py)
+
+目标：对筛选后的文本进行“精加工”，修复表达缺陷并注入逻辑价值。
+
+核心模型：Qwen/Qwen1.5-1.8B-Chat (通过 vLLM 加载)。
+
+工作流程：
+
+智能诊断：识别“高困惑度”、“高冗余度”或“缺乏逻辑”的文本。
+
+按需改写：根据诊断结果，选择对应的Prompt模板进行优化或增强。
+
+严格质检：确保改写后的文本忠于原意且真正达到了优化/增强的目标。
+
+产出：data/rewrite_output/rewritten_data.jsonl，记录了所有文本的改写状态和结果。
+
+阶段三：QA生成 (qa_generate.py)
+
+目标：将精炼后的陈述性文本，创造性地转化为结构化的问答对，用于指令微调。
+
+核心模型：Qwen/Qwen1.5-1.8B-Chat (通过 vLLM 加载)。
+
+工作流程：
+
+智能选材：优先使用改写成功的文本。
+
+主题分析：通过关键词匹配，判断文本适合生成的问题类型。
+
+多样化生成：从多种措辞的Prompt模板中随机选择一个，调用vLLM进行批量生成。
+
+多维度质检：对生成的QA对进行格式、长度、内容相关性等多重校验。
+
+产出：data/qa_output/qa_pairs.jsonl，最终可用于微调的高质量指令数据集。
+
+常见问题 (FAQ)
+
+运行报错 Repo id must be in the form ...
+
+问题: 你在配置文件中（如 rewrite_config.py 或 qa_config.py）将模型ID错误地设置为了一个本地路径。
+
+解决: 请确保所有 MODEL_ID 相关的变量都设置为Hugging Face Hub上的标准模型ID，例如 "Qwen/Qwen1.5-1.8B-Chat"，而不是本地缓存路径。
+
+vLLM 报错显存不足 (ValueError: ... KV cache is needed ...)
+
+问题: GPU上同时加载了多个模型，导致vLLM启动时没有足够的连续显存。
+
+解决: 在 vLLM 加载模型的代码中（如 rewrite/model_utils.py -> load_rewrite_model），为 LLM() 添加参数 gpu_memory_utilization 和 max_model_len 来限制其资源占用。
+
+code
+Python
+download
+content_copy
+expand_less
+model = LLM(
+    model=REWRITE_MODEL_ID,
+    trust_remote_code=True,
+    gpu_memory_utilization=0.7, # 使用70%的显存
+    max_model_len=8192          # 限制最大序列长度
+)
+
+如何处理更大的数据集（>10G）？
+
+当前 filter.py 脚本采用了将中间数据缓存在内存中的策略。对于超大规模数据集，这可能会导致内存溢出。
+
+优化建议: 修改 filter.py，将 preprocess_and_md5_deduplicate 和 minhash_lsh_deduplicate 的结果分块写入临时文件，然后在 layered_perplexity_filter 中逐块读取处理，以将内存占用降低为流式处理。
+
+如何提升最终QA数据集的产出量？
+
+最终产出量主要由 QA生成阶段的成功率 决定。
+
+提升方法:
+
+放宽质检标准: 在 qa/qa_config.py 中，适度降低 SEMANTIC_SIMILARITY_MIN，或放宽 MIN/MAX_*_LEN 的范围。
+
+增加生成次数: 修改 qa/qa_generate.py 的主循环，让每个源文本尝试生成多次QA对。这是最直接的“倍增器”，但会增加处理时间。
+
+code
+Code
+download
+content_copy
+expand_less

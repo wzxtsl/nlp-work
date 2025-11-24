@@ -31,13 +31,14 @@ MAX_NEW_TOKENS_QA = 512
 TEMPERATURE_QA = 0.7
 TOP_P_QA = 0.95
 BATCH_SIZE_QA = 32  # QA生成通常较短，可适度提高批量
+NUM_QA_ATTEMPTS_PER_TEXT = 3# 为每个源文本尝试生成 QA 的次数。设为 1 则行为不变
 MAX_SOURCE_CHARS = 1600  # 过长文本先做截断，避免提示词过长
 
 # ========== 过滤与质量控制 ==========
-MIN_QUESTION_LEN = 8
-MAX_QUESTION_LEN = 300
+MIN_QUESTION_LEN = 5
+MAX_QUESTION_LEN = 400
 MIN_ANSWER_LEN = 4
-MAX_ANSWER_LEN = 1200
+MAX_ANSWER_LEN = 2000
 REQUIRED_CHINESE_PUNCT = "？"  # 优先生成以问号结尾的中文问题
 SEMANTIC_SIMILARITY_MIN = 0.55  # 问题与原文语义相关度（粗略阈值，复用 embedding）
 

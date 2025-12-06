@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 # ========== 核心配置（满足需求+50%保留率） ==========
 INPUT_DIR = "data/input"
-OUTPUT_PATH = "data/output"  # 仅保留输出目录（无中间目录）
+OUTPUT_PATH = "data/filter_output"  # 仅保留输出目录（无中间目录）
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
 # 抽样配置
@@ -823,3 +823,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -43,7 +43,7 @@ if __name__ == "__main__":
     )
     
     # 检查筛选结果文件
-    filtered_input = os.path.join("data/output", "clmmu_kept_data_final.jsonl")
+    filtered_input = os.path.join("data/filter_output", "clmmu_kept_data_final.jsonl")
     if not os.path.exists(filtered_input):
         print(f"❌ 筛选结果不存在：{filtered_input}")
         exit(1)
@@ -99,3 +99,4 @@ if __name__ == "__main__":
     print(f"1. 筛选结果：{filtered_input}")
     print(f"2. 改写结果：{os.path.join('rewrite', 'data', 'rewrite_output', 'rewritten_data.jsonl')}")  # 按你的输出路径修改
     print(f"3. QA结果：{os.path.join('data', 'qa_output', 'qa_pairs.jsonl')}")
+

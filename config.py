@@ -18,5 +18,6 @@ except Exception:
     DEVICE = "cpu"
 
 # 筛选阶段输出目录（供改写阶段自动读取）
-OUTPUT_PATH = os.path.join("data", "output")
+OUTPUT_PATH = os.path.join("data", "filter_output")
 os.makedirs(OUTPUT_PATH, exist_ok=True)
+

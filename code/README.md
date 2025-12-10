@@ -148,3 +148,16 @@ python test-fine-tuning.py
 -工程技术: 计算机科学、电子工程等
 - 医学法律: 临床知识、法律等
 
+## 训练后模型
+### 数据流水线得到QA问答对得到完整模型结果
+通过网盘分享的文件：qwen2.5-0.5b-qa-r16.zip
+链接: https://pan.baidu.com/s/1YdoWFrxp0DYcOL6LnDWOVA?pwd=bjwq 提取码: bjwq 复制这段内容后打开百度网盘手机App，操作更方便哦 
+--来自百度网盘超级会员v9的分享
+### 指令-输出问答对得到完整模型结果
+通过网盘分享的文件：qwen2.5-0.5b-io-r16.zip
+链接: https://pan.baidu.com/s/1V048CRDIEAvVmmWbizUvrQ?pwd=7tdk 提取码: 7tdk 复制这段内容后打开百度网盘手机App，操作更方便哦 
+--来自百度网盘超级会员v9的分享
+### 提示词-回应问答对得到完整模型结果
+通过网盘分享的文件：qwen2.5-0.5b-pr-r16.zip
+链接: https://pan.baidu.com/s/1WnkBZQx3l6Bxtgpz7Rsmhw?pwd=khuc 提取码: khuc 复制这段内容后打开百度网盘手机App，操作更方便哦 
+--来自百度网盘超级会员v9的分享

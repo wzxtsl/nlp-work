@@ -47,9 +47,9 @@ NVIDIA GPU (推荐 Ampere 架构及以上, 如 30/40 系列)
 CUDA 12.1+
 核心依赖库安装：
 ```
-pip install torch transformers datasets tqdm numpy datasketch psutil
 # 强烈推荐安装 vLLM 以获得数十倍的性能提升
 pip install vllm
+pip install torch transformers datasets tqdm numpy datasketch psutil
 ```
 
 ## 快速开始
@@ -136,5 +136,6 @@ model = LLM(
 增加生成次数: 修改 qa/qa_generate.py 的主循环，让每个源文本尝试生成多次QA对。这是最直接的“倍增器”，但会增加处理时间。
 
 测评代码已放入fine-tuning分支中☺☺☺
+
 
 
